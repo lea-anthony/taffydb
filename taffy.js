@@ -1142,6 +1142,7 @@ var TAFFY, exports, T;
           onRemove          : false,
           onDBChange        : false,
           storageName       : false,
+          useTriggerIO       : false,
           forcePropertyCase : null,
           cacheSize         : 100,
           name              : ''
@@ -1234,10 +1235,17 @@ var TAFFY, exports, T;
             }, 0 );
           }
           if ( settings.storageName ){
-            setTimeout( function () {
-              localStorage.setItem( 'taffy_' + settings.storageName,
-                JSON.stringify( TOb ) );
-            });
+            if( settings.useTriggerIO ) {
+                setTimeout( function () {
+                  forge.prefs.set( 'taffy_' + settings.storageName, JSON.stringify( TOb ) );     
+                });         
+            } else {
+              setTimeout( function () {
+                localStorage.setItem( 'taffy_' + settings.storageName,
+                  JSON.stringify( TOb ) );
+              });
+            }
+
           }
           return dm;
         },
@@ -1643,18 +1651,35 @@ var TAFFY, exports, T;
         // * Pull data into the DB as needed
         // **************************************** 
         var r = false, i;
-        if ( localStorage ){
-          if ( n ){
-            i = localStorage.getItem( 'taffy_' + n );
-            if ( i && i.length > 0 ){
-              root.insert( i );
-              r = true;
-            }
-            if ( TOb.length > 0 ){
-              setTimeout( function () {
-                localStorage.setItem( 'taffy_' + settings.storageName,
-                  JSON.stringify( TOb ) );
+        if ( localStorage ) {
+          if ( settings.useTriggerIO ) {
+            if ( n ){
+              forge.prefs.get('taffy_' + n, function(i) {
+                if ( i && i.length > 0 ){
+                  root.insert( i );
+                  r = true;
+                }
+                if ( TOb.length > 0 ){
+                  setTimeout( function () {
+                    forge.prefs.set( 'taffy_' + settings.storageName, JSON.stringify( TOb ) ); 
+                  });
+                }                
               });
+
+            }
+          } else {
+            if ( n ){
+              i = localStorage.getItem( 'taffy_' + n );
+              if ( i && i.length > 0 ){
+                root.insert( i );
+                r = true;
+              }
+              if ( TOb.length > 0 ){
+                setTimeout( function () {
+                  localStorage.setItem( 'taffy_' + settings.storageName,
+                    JSON.stringify( TOb ) );
+                });
+              }
             }
           }
           root.settings( {storageName : n} );
@@ -1970,4 +1995,3 @@ var TAFFY, exports, T;
 if ( typeof(exports) === 'object' ){
   exports.taffy = TAFFY;
 }
-
